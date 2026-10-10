@@ -49,7 +49,7 @@ function landing(message = '', action?: { label: string; run(): void }) {
     $('landing').hidden = false;
     $('message').replaceChildren(message);
     if (action) {
-        const button = Object.assign(document.createElement('button'), { type: 'button', textContent: action.label, className: 'primary' });
+        const button = Object.assign(document.createElement('button'), { type: 'button', textContent: action.label, className: 'github' });
         button.onclick = action.run;
         $('message').append(' ', button);
     }
@@ -322,7 +322,7 @@ async function main() {
     const texts: Record<string, Parameters<typeof t>[0]> = {
         tagline: 'tagline', 'repo-label': 'repoLabel', 'open-button': 'open', 'save-label': 'save', download: 'download', badge: 'copyBadge',
         other: 'openOther', logout: 'logout', 'message-label': 'commitMessage', 'files-label': 'filesToSave',
-        'pr-label': 'asPullRequest', 'cancel-save': 'cancel', 'confirm-save': 'save', signin: 'signInRepos', 'repos-title': 'yourRepos',
+        'pr-label': 'asPullRequest', 'cancel-save': 'cancel', 'confirm-save': 'save', 'signin-label': 'signIn', 'signin-hint': 'signInRepos', experimental: 'experimental', 'source-label': 'source', 'repos-title': 'yourRepos',
         'more-access': 'moreAccess', 'logout-landing': 'logout', pages: 'publishPages', 'pages-title': 'pagesTitle',
         'pages-intro': 'pagesIntro', 'pages-workflow': 'pagesWorkflow', 'pages-settings': 'pagesSettings', 'pages-close': 'close',
     };

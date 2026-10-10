@@ -1,6 +1,6 @@
 node_modules/
-dist/
-editor/
+/dist/
+/editor/
 test/fixture/
 app.json
 .wrangler/

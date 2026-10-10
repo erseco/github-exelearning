@@ -1,0 +1,62 @@
+# Publishes this eXeLearning resource on GitHub Pages every time its source changes,
+# for example after "Save to GitHub" in https://github.exelearning.dev
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+name: Publish eXeLearning resource
+
+on:
+  push:
+    branches: [__BRANCH__]
+    paths:
+      - '__PREFIX__content.xml'
+      - '__PREFIX__content/resources/**'
+      - '__PREFIX__screenshot.png'
+      - '__PREFIX__theme/**'
+      - '.github/workflows/exelearning-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  PROJECT_DIR: __PROJECT_DIR__ # folder that contains content.xml
+  EXELEARNING_IMAGE: exelearning/exelearning:v4.0.5
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Package the project as .elpx
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/build"
+          files=(content.xml)
+          for path in screenshot.png content/resources custom theme; do
+            if [ -e "$path" ]; then files+=("$path"); fi
+          done
+          zip -qr "$RUNNER_TEMP/build/project.elpx" "${files[@]}"
+          # The CLI image runs as a non-root user that must be able to write the export.
+          chmod 777 "$RUNNER_TEMP/build"
+
+      - name: Export the website with the eXeLearning CLI
+        run: |
+          docker run --rm -v "$RUNNER_TEMP/build:/data" "$EXELEARNING_IMAGE" \
+            bun cli elp:export /data/project.elpx /data/site --format=html5
+          unzip -q "$RUNNER_TEMP/build/site.zip" -d "$RUNNER_TEMP/site"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ runner.temp }}/site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Register the eXeLearning GitHub App</title>
+<style>body { font: 16px/1.5 system-ui, sans-serif; max-width: 640px; margin: 10vh auto; padding: 0 20px; } input, button { font: inherit; padding: 6px 10px; } pre { background: #f3f4f6; padding: 12px; overflow: auto; font-size: 12px; }</style>
+</head>
+<body>
+<h1>Register the eXeLearning GitHub App</h1>
+<p>Open this file in your browser while signed in to GitHub. GitHub shows the app (name, permissions) before creating it; you can rename it there if the name is taken.</p>
+<form id="form" method="post">
+  <label>Organization that owns the app (empty = your personal account)<br>
+    <input id="org" value="exelearning"></label>
+  <input type="hidden" name="manifest" id="manifest">
+  <p><button>Register on GitHub</button></p>
+</form>
+<p>Afterwards GitHub sends you to <code>https://github.exelearning.dev/setup.html</code>, which shows a one-time code (valid for 1 hour) to finish the setup:</p>
+<pre>gh api -X POST /app-manifests/CODE/conversions</pre>
+<h2>Manifest</h2>
+<pre id="preview"></pre>
+<script>
+const manifest = {
+    name: 'eXeLearning',
+    url: 'https://github.exelearning.dev',
+    description: 'Open eXeLearning resources stored in your repositories with the eXeLearning editor and save them back.',
+    hook_attributes: { url: 'https://github.exelearning.dev/', active: false },
+    redirect_url: 'https://github.exelearning.dev/setup.html',
+    callback_urls: ['https://github.exelearning.dev/auth/callback.html', 'http://localhost:8787/auth/callback.html'],
+    setup_url: 'https://github.exelearning.dev/auth/callback.html',
+    setup_on_update: true,
+    public: true,
+    default_permissions: { contents: 'write', pull_requests: 'write', metadata: 'read' },
+    default_events: [],
+};
+document.getElementById('manifest').value = JSON.stringify(manifest);
+document.getElementById('preview').textContent = JSON.stringify(manifest, null, 2);
+document.getElementById('form').onsubmit = () => {
+    const org = document.getElementById('org').value.trim();
+    const state = crypto.randomUUID();
+    document.getElementById('form').action = org
+        ? `https://github.com/organizations/${encodeURIComponent(org)}/settings/apps/new?state=${state}`
+        : `https://github.com/settings/apps/new?state=${state}`;
+};
+</script>
+</body>
+</html>

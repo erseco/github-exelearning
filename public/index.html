@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eXeLearning · GitHub</title>
+<meta name="description" content="Edit eXeLearning resources stored on GitHub and save them back to the repository.">
+<link rel="icon" href="/editor/favicon.ico">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header id="bar" hidden>
+  <a class="brand" href="/"><img src="/editor/exelearning.png" alt="" width="20" height="20">eXeLearning</a>
+  <a id="repo-link" target="_blank" rel="noopener"></a>
+  <span id="status" role="status"></span>
+  <span class="spacer"></span>
+  <button id="save" class="primary" type="button" disabled>
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+    <span id="save-label"></span>
+  </button>
+  <details class="menu">
+    <summary aria-label="Menu">⋯</summary>
+    <div>
+      <button id="download" type="button"></button>
+      <button id="badge" type="button"></button>
+      <button id="pages" type="button"></button>
+      <button id="other" type="button"></button>
+      <button id="logout" type="button"></button>
+    </div>
+  </details>
+</header>
+
+<main id="landing">
+  <h1><img src="/editor/exelearning.png" alt="" width="40" height="40"> eXeLearning · GitHub</h1>
+  <p id="tagline"></p>
+  <form id="open-form">
+    <label for="repo-input" id="repo-label"></label>
+    <div class="row">
+      <input id="repo-input" name="repo" placeholder="owner/repository" required autocomplete="off" spellcheck="false">
+      <button class="primary" id="open-button"></button>
+    </div>
+  </form>
+  <p id="message" role="alert"></p>
+  <ul id="candidates"></ul>
+  <section id="mine">
+    <p id="signin-row" hidden><button type="button" id="signin"></button></p>
+    <div id="repos-box" hidden>
+      <h2 id="repos-title"></h2>
+      <ul id="repos"></ul>
+      <p class="links"><button type="button" class="link" id="more-access"></button> · <button type="button" class="link" id="logout-landing"></button></p>
+    </div>
+  </section>
+</main>
+
+<div id="editor" hidden></div>
+
+<dialog id="save-dialog">
+  <form method="dialog">
+    <label><span id="message-label"></span><input id="commit-message" required></label>
+    <p id="files-label"></p>
+    <ul id="save-files"></ul>
+    <label class="check" id="delete-row"><input type="checkbox" id="delete-removed"><span id="delete-label"></span></label>
+    <fieldset>
+      <label class="check"><input type="radio" name="target" value="branch" id="to-branch" checked><span id="branch-label"></span></label>
+      <label class="check"><input type="radio" name="target" value="pr" id="to-pr"><span id="pr-label"></span></label>
+    </fieldset>
+    <menu>
+      <button value="cancel" id="cancel-save" formnovalidate></button>
+      <button value="save" id="confirm-save" class="primary"></button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="pages-dialog">
+  <h2 id="pages-title"></h2>
+  <p id="pages-intro"></p>
+  <ol>
+    <li><a id="pages-workflow" target="_blank" rel="noopener"></a></li>
+    <li><a id="pages-settings" target="_blank" rel="noopener"></a></li>
+  </ol>
+  <p id="pages-result"></p>
+  <menu><button type="button" id="pages-close" class="primary"></button></menu>
+</dialog>
+
+<div id="toast" role="status" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>

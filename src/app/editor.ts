@@ -47,8 +47,14 @@ export class EditorFrame {
             this.waiting.set(key, {
                 done,
                 fail,
-                resolve: (m) => (clearTimeout(timer), resolve(m)),
-                reject: (e) => (clearTimeout(timer), reject(e)),
+                resolve: (m) => {
+                    clearTimeout(timer);
+                    resolve(m);
+                },
+                reject: (e) => {
+                    clearTimeout(timer);
+                    reject(e);
+                },
             });
         });
     }

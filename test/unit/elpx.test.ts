@@ -81,7 +81,7 @@ test('dropScreenshotProperty removes only the duplicated screenshot', () => {
   </odeProperty>
 </odeProperties>`;
     const out = new TextDecoder().decode(dropScreenshotProperty(text(xml)));
-    assert.equal(out, xml.replace(/  <odeProperty>\n    <key>pp_screenshot[\s\S]*?<\/odeProperty>\n/, ''));
+    assert.equal(out, xml.replace(/ {2}<odeProperty>\n {4}<key>pp_screenshot[\s\S]*?<\/odeProperty>\n/, ''));
     assert.ok(out.includes('pp_title') && out.includes('pp_lang') && !out.includes('pp_screenshot'));
     const clean = text('<ode/>');
     assert.equal(dropScreenshotProperty(clean), clean);

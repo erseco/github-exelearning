@@ -11,7 +11,9 @@
   "scripts": {
     "fetch-editor": "node scripts/fetch-editor.mjs",
     "fixture": "rm -rf test/fixture && git clone -q --depth 1 https://github.com/ateeducacion/exelearning-style-book.git test/fixture && git -C test/fixture remote remove origin",
-    "build": "tsc --noEmit -p . && node scripts/build.mjs",
+    "lint": "biome lint",
+    "typecheck": "tsc --noEmit -p .",
+    "build": "npm run typecheck && node scripts/build.mjs",
     "dev": "APP_ORIGINS=http://localhost:8787 npm run build && wrangler dev --port 8787 --var APP_ORIGIN:http://localhost:8787 --var EDITOR_ORIGIN:http://127.0.0.1:8787",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/unit/*.test.ts",
     "test:e2e": "node test/e2e.mjs",
@@ -21,9 +23,15 @@
     "fflate": "^0.8.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
     "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
     "playwright": "^1.64.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "wrangler": "^4.149.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261006.1": true
   }
 }

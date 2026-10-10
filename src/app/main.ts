@@ -23,7 +23,10 @@ function toast(text: string, link?: { href: string; label: string }, action?: { 
     if (link) box.append(Object.assign(document.createElement('a'), { href: link.href, target: '_blank', rel: 'noopener', textContent: link.label }));
     if (action) {
         const button = Object.assign(document.createElement('button'), { type: 'button', textContent: action.label });
-        button.onclick = () => ((box.hidden = true), action.run());
+        button.onclick = () => {
+            box.hidden = true;
+            action.run();
+        };
         box.append(button);
     }
     box.hidden = false;
@@ -328,13 +331,21 @@ async function main() {
     $('save').onclick = () => void save();
     $('download').onclick = () => void download().catch((e) => toast(errorText(e)));
     $('badge').onclick = () => void copyBadge().catch((e) => toast(errorText(e)));
-    $('other').onclick = () => (location.href = '/');
-    $('logout').onclick = () => (logout(), toast(t('logout')));
+    $('other').onclick = () => {
+        location.href = '/';
+    };
+    $('logout').onclick = () => {
+        logout();
+        toast(t('logout'));
+    };
     $('pages').onclick = () => void showPagesDialog().catch((e) => toast(errorText(e)));
     $('pages-close').onclick = () => $<HTMLDialogElement>('pages-dialog').close();
     $('signin').onclick = () => void signIn().catch((e) => landing(errorText(e)));
     $('more-access').onclick = () => void giveAccess().catch((e) => landing(errorText(e)));
-    $('logout-landing').onclick = () => (logout(), void showRepos());
+    $('logout-landing').onclick = () => {
+        logout();
+        void showRepos();
+    };
     for (const button of document.querySelectorAll('.menu div button')) button.addEventListener('click', () => $('bar').querySelector('details')?.removeAttribute('open'));
     $('open-form').onsubmit = (event) => {
         event.preventDefault();

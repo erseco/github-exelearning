@@ -102,9 +102,11 @@ npm run dev            # http://localhost:8787 (app) + http://127.0.0.1:8787 (ed
 `npm run fetch-editor -- <dir|zip>` installs a local static build instead (for example an
 eXeLearning branch built with `bun run build:static`).
 
-Tests:
+Checks (also run by CI, `.github/workflows/ci.yml`; agent conventions in [AGENTS.md](AGENTS.md)):
 
 ```sh
+npm run lint       # Biome
+npm run typecheck
 npm test           # unit: ELPX packaging, path safety, zip limits, save plan, GitHub commit/PR logic, token endpoint
 npm run test:e2e   # real Worker (wrangler dev) + real editor in Chromium, GitHub faked from test/fixture
 ```

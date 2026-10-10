@@ -1,0 +1,11 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "files": {
+    "includes": ["src/**", "worker/**", "scripts/**/*.mjs", "test/**/*.ts", "test/**/*.mjs", "!test/fixture"]
+  },
+  "formatter": { "enabled": false },
+  "linter": { "enabled": true, "rules": {
+      "recommended": true,
+      "suspicious": { "noExplicitAny": "off" }
+    } }
+}

@@ -34,9 +34,10 @@ function toast(text: string, link?: { href: string; label: string }, action?: { 
     if (!action) box.dataset.timer = String(setTimeout(() => (box.hidden = true), link ? 15_000 : 6_000));
 }
 
-function setStatus(text: string, isDirty = dirty) {
+function setStatus(text: string, isDirty = dirty, busy = false) {
     dirty = isDirty;
     $('status').textContent = text;
+    $('status').classList.toggle('busy', busy);
     $('status').classList.toggle('dirty', isDirty);
 }
 
@@ -45,9 +46,10 @@ const repoName = (target: Target) => `${target.owner}/${target.repo}`;
 const query = (target: Target, branch?: string, path = target.path) =>
     `?${new URLSearchParams({ repo: repoName(target), ...(branch ? { branch } : {}), ...(path ? { path } : {}) })}`;
 
-function landing(message = '', action?: { label: string; run(): void }) {
+function landing(message = '', action?: { label: string; run(): void }, busy = false) {
     $('landing').hidden = false;
     $('message').replaceChildren(message);
+    $('message').classList.toggle('busy', busy);
     if (action) {
         const button = Object.assign(document.createElement('button'), { type: 'button', textContent: action.label, className: 'github' });
         button.onclick = action.run;
@@ -66,7 +68,7 @@ async function signInAndRetry(target: Target) {
 }
 
 async function open(target: Target) {
-    landing(t('opening', { repo: repoName(target) }));
+    landing(t('opening', { repo: repoName(target) }), undefined, true);
     ($('repo-input') as HTMLInputElement).value = repoName(target);
     const token = await currentToken();
     try {
@@ -101,7 +103,7 @@ async function open(target: Target) {
     $('editor').hidden = false;
     showRepoLink();
     document.title = `${repo} · eXeLearning`;
-    setStatus(t('loadingEditor'), false);
+    setStatus(t('loadingEditor'), false, true);
     editor = new EditorFrame($('editor'), config.editorOrigin);
     editor.onDirty = () => setStatus(t('unsaved'), true);
     editor.onSaveShortcut = () => $('save').click();
@@ -163,7 +165,7 @@ async function save() {
     const previous = $('status').textContent ?? '';
     let popup: Window | undefined;
     try {
-        setStatus(t('saving'));
+        setStatus(t('saving'), dirty, true);
         const { bytes, requestId } = await editor.exportElpx();
         const exported: Files = readElpx(bytes);
         exported.set('content.xml', dropScreenshotProperty(exported.get('content.xml') as Uint8Array));
@@ -181,7 +183,7 @@ async function save() {
         const options = await askSave([...plan.write, ...plan.removed.map((p) => `− ${p}`)], plan.removed, () => !hasUsableToken() || access === false);
         if (!options) return;
         popup = options.popup;
-        setStatus(t('saving'));
+        setStatus(t('saving'), dirty, true);
 
         if (!token) {
             if (!popup) throw new Error(t('loginNeeded'));

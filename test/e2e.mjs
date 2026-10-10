@@ -75,11 +75,15 @@ async function github(route) {
 const build = spawn('npm', ['run', 'build'], { env: { ...process.env, APP_ORIGINS: APP }, stdio: 'inherit' });
 assert.equal(await new Promise((r) => build.on('exit', r)), 0, 'build failed');
 const worker = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--ip', '127.0.0.1', '--var', `APP_ORIGIN:${APP}`, '--var', `EDITOR_ORIGIN:${EDITOR}`,
-    '--var', 'GITHUB_CLIENT_ID:test-client', '--var', 'GITHUB_APP_SLUG:exelearning-test'], { stdio: ['ignore', 'pipe', 'inherit'] });
-await new Promise((resolve, reject) => {
-    worker.stdout.on('data', (chunk) => /Ready on/.test(String(chunk)) && resolve());
-    worker.on('exit', () => reject(new Error('wrangler dev exited')));
-});
+    '--var', 'GITHUB_CLIENT_ID:test-client', '--var', 'GITHUB_APP_SLUG:exelearning-test'], { stdio: 'inherit' });
+// Wait until the Worker answers (its log format differs between terminals and CI).
+let exited = false;
+worker.on('exit', () => (exited = true));
+for (let i = 0; ; i++) {
+    if (exited || i > 120) throw new Error('wrangler dev did not start');
+    if (await fetch(`${EDITOR}/api/github/config`).then((r) => r.ok, () => false)) break;
+    await new Promise((r) => setTimeout(r, 1000));
+}
 
 const browser = await chromium.launch({ headless: process.env.HEADED !== '1' });
 try {

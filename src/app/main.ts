@@ -5,7 +5,8 @@ import { planSave } from '../sync.ts';
 import { type AppConfig, appCanAccess, currentToken, hasUsableToken, install, login, logout, openPopup } from './auth.ts';
 import { EditorFrame } from './editor.ts';
 import {
-    createApi, findProjects, GitHubError, listAccessibleRepos, loadProject, pagesWorkflow, type Project, parseTarget, type RepoSummary, saveProject, type Target,
+    type Api, blobBytes, createApi, findProjects, GitHubError, listAccessibleRepos, loadProject, pagesWorkflow, type Project, parseTarget, type RepoSummary,
+    readTitle, type Resource, saveProject, type Target,
 } from './github.ts';
 import { lang, t } from './i18n.ts';
 
@@ -243,13 +244,82 @@ async function giveAccess() {
     await showRepos();
 }
 
-/** "Your repositories": what the app can reach, with the eXeLearning resources found in each one. */
+const VIEW_KEY = 'exelearning-resources-view';
+
+function setView(view: 'grid' | 'list') {
+    $('repos').className = view;
+    $('view-grid').setAttribute('aria-pressed', String(view === 'grid'));
+    $('view-list').setAttribute('aria-pressed', String(view === 'list'));
+    try {
+        localStorage.setItem(VIEW_KEY, view);
+    } catch {
+        // storage unavailable: the choice lasts until reload
+    }
+}
+
+const relative = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+function updatedAgo(iso: string): string {
+    const days = Math.round((Date.parse(iso) - Date.now()) / 86_400_000);
+    if (!iso || Number.isNaN(days)) return '';
+    if (Math.abs(days) < 30) return relative.format(days, 'day');
+    if (Math.abs(days) < 365) return relative.format(Math.round(days / 30), 'month');
+    return relative.format(Math.round(days / 365), 'year');
+}
+
+/** One card per eXeLearning resource; its title and screenshot load afterwards. */
+function resourceCard(api: Api, resource: Resource): HTMLLIElement {
+    const { repo, path } = resource;
+    const name = `${repo.owner}/${repo.repo}`;
+    const title = element('span', { className: 'title', textContent: path ? path.split('/').pop() : repo.repo });
+    const meta = element('span', { className: 'meta', textContent: [name, path || t('root'), updatedAgo(repo.pushedAt)].filter(Boolean).join(' · ') });
+    if (repo.private) meta.append(' ', element('span', { className: 'badge', textContent: t('private') }));
+    const thumb = element('div', { className: 'thumb' });
+    const edit = element('a', { className: 'button edit', href: query({ owner: repo.owner, repo: repo.repo, path: '' }, undefined, path) }, t('edit'));
+    const github = element('a', {
+        href: `https://github.com/${name}/tree/${encodeURIComponent(repo.defaultBranch)}/${path}`,
+        target: '_blank',
+        rel: 'noopener',
+        textContent: t('view'),
+    });
+    const card = element('li', { className: 'card' }, thumb, element('div', { className: 'info' }, element('div', { className: 'text' }, title, meta), element('div', { className: 'actions' }, edit, github)));
+
+    void blobBytes(api, repo, resource.contentSha)
+        .then((bytes) => {
+            const found = readTitle(new TextDecoder().decode(bytes));
+            if (found) title.textContent = found;
+        })
+        .catch(() => {});
+    const noShot = () => {
+        thumb.className = 'thumb empty';
+        thumb.replaceChildren(element('img', { src: '/editor/exelearning.png', alt: '' }), element('span', { textContent: t('noScreenshot') }));
+    };
+    if (resource.screenshotSha) {
+        void blobBytes(api, repo, resource.screenshotSha)
+            .then((bytes) => thumb.replaceChildren(element('img', { className: 'shot', alt: '', src: URL.createObjectURL(new Blob([bytes.slice().buffer], { type: 'image/png' })) })))
+            .catch(noShot);
+    } else {
+        noShot();
+    }
+    return card;
+}
+
+/** "Your eXeLearning resources": every resource in the repositories the app can reach. */
 async function showRepos() {
     const token = await currentToken();
-    $('signin-row').hidden = !!token || !config.clientId;
+    const signedOut = !token && !!config.clientId;
+    $('signin-card').hidden = !signedOut;
+    $('divider').hidden = !signedOut;
     $('repos-box').hidden = !token;
+    $('landing').classList.toggle('wide', !!token);
+    // Signed in, the box becomes a small "another repository?" line below the resources.
+    const form = $('open-form');
+    form.classList.toggle('compact', !!token);
+    $('repo-label').textContent = token ? t('otherRepo') : t('repoLabel');
+    if (token) $('repos-box').insertBefore(form, $('repos-box').querySelector('.links'));
+    else $('divider').after(form);
     if (!token) return;
     const api = createApi(token);
+    const login = await api<{ login: string }>('/user').then((u) => u.login, () => '');
     let repos: RepoSummary[];
     try {
         repos = await listAccessibleRepos(api);
@@ -257,28 +327,38 @@ async function showRepos() {
         return landing(errorText(error));
     }
     const list = $('repos');
-    if (!repos.length) return list.replaceChildren(element('li', { className: 'muted', textContent: t('noRepos') }));
-    const rows = repos.map((repo) => {
-        const status = element('span', { className: 'muted', textContent: t('searching') });
-        const row = element('li', {}, element('span', { className: 'name', textContent: `${repo.owner}/${repo.repo}` }));
-        if (repo.private) row.append(element('span', { className: 'badge', textContent: t('private') }));
-        row.append(status);
-        return { repo, row, status };
-    });
-    list.replaceChildren(...rows.map((r) => r.row));
+    const others: string[] = [];
+    let resources = 0;
+    let withResources = 0;
+    let pending = repos.length;
+    const searching = element('li', { className: 'searching' });
+    const update = () => {
+        const summary = t('summary', { n: resources, r: withResources });
+        $('repos-summary').textContent = !repos.length ? t('noRepos') : login ? t('signedInAs', { summary, login }) : summary;
+        searching.textContent = t('searchingMore', { n: pending });
+        searching.classList.toggle('busy', pending > 0);
+        if (!pending) searching.remove();
+        $('other-repos').hidden = !others.length;
+        $('other-summary').textContent = t('otherRepos', { n: others.length });
+        $('other-list').replaceChildren(...others.map((name) => element('li', { textContent: name })));
+    };
+    list.replaceChildren(searching);
+    others.length = 0;
+    update();
     let next = 0;
-    let found = 0; // repositories with resources move to the top, in the order they are found
     const worker = async () => {
-        while (next < rows.length) {
-            const { repo, row, status } = rows[next++];
-            const target = { owner: repo.owner, repo: repo.repo, path: '' };
-            const folders = await findProjects(api, repo).catch(() => []);
-            if (!folders.length) {
-                status.textContent = t('noResource');
-                continue;
+        while (next < repos.length) {
+            const repo = repos[next++];
+            const found = await findProjects(api, repo).catch(() => []);
+            pending--;
+            if (found.length) {
+                withResources++;
+                resources += found.length;
+                for (const resource of found) list.insertBefore(resourceCard(api, resource), searching);
+            } else {
+                others.push(`${repo.owner}/${repo.repo}`);
             }
-            status.replaceWith(...folders.map((path) => element('a', { href: query(target, undefined, path), textContent: path || t('root') })));
-            list.insertBefore(row, list.children[found++]);
+            update();
         }
     };
     await Promise.all(Array.from({ length: 4 }, worker));
@@ -324,8 +404,8 @@ async function main() {
     const texts: Record<string, Parameters<typeof t>[0]> = {
         tagline: 'tagline', 'repo-label': 'repoLabel', 'open-button': 'open', 'save-label': 'save', download: 'download', badge: 'copyBadge',
         other: 'openOther', logout: 'logout', 'message-label': 'commitMessage', 'files-label': 'filesToSave',
-        'pr-label': 'asPullRequest', 'cancel-save': 'cancel', 'confirm-save': 'save', 'signin-label': 'signIn', 'signin-hint': 'signInRepos', experimental: 'experimental', 'source-label': 'source', 'repos-title': 'yourRepos',
-        'more-access': 'moreAccess', 'logout-landing': 'logout', pages: 'publishPages', 'pages-title': 'pagesTitle',
+        'pr-label': 'asPullRequest', 'cancel-save': 'cancel', 'confirm-save': 'save', 'signin-label': 'signIn', 'see-all': 'seeAll', 'see-all-hint': 'seeAllHint', 'or-open': 'orOpen', 'open-hint': 'publicHint', experimental: 'experimental', 'source-label': 'source', 'repos-title': 'yourRepos',
+        'more-access': 'moreAccess', 'view-grid-label': 'gridView', 'view-list-label': 'listView', 'logout-landing': 'logout', pages: 'publishPages', 'pages-title': 'pagesTitle',
         'pages-intro': 'pagesIntro', 'pages-workflow': 'pagesWorkflow', 'pages-settings': 'pagesSettings', 'pages-close': 'close',
     };
     for (const [id, key] of Object.entries(texts)) $(id).textContent = t(key);
@@ -340,6 +420,13 @@ async function main() {
         logout();
         toast(t('logout'));
     };
+    $('view-grid').onclick = () => setView('grid');
+    $('view-list').onclick = () => setView('list');
+    try {
+        if (localStorage.getItem(VIEW_KEY) === 'list') setView('list');
+    } catch {
+        // storage unavailable
+    }
     $('pages').onclick = () => void showPagesDialog().catch((e) => toast(errorText(e)));
     $('pages-close').onclick = () => $<HTMLDialogElement>('pages-dialog').close();
     $('signin').onclick = () => void signIn().catch((e) => landing(errorText(e)));

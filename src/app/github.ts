@@ -267,18 +267,46 @@ export async function listAccessibleRepos(api: Api): Promise<RepoSummary[]> {
     return [...repos.values()].sort((a, b) => b.pushedAt.localeCompare(a.pushedAt));
 }
 
-/** Folders ('' = root) of the default branch that contain an eXeLearning content.xml. */
-export async function findProjects(api: Api, repo: RepoSummary): Promise<string[]> {
+export interface Resource {
+    repo: RepoSummary;
+    /** Folder ('' = root) of the default branch that contains content.xml. */
+    path: string;
+    contentSha: string;
+    screenshotSha?: string;
+}
+
+/** eXeLearning resources (folders with a content.xml) on the repository's default branch. */
+export async function findProjects(api: Api, repo: RepoSummary): Promise<Resource[]> {
+    let tree: { tree: { path: string; type: string; sha: string }[] };
     try {
-        const tree = await api(`/repos/${repo.owner}/${repo.repo}/git/trees/${encodeURIComponent(repo.defaultBranch)}?recursive=1`);
-        return (tree.tree as { path: string; type: string }[])
-            .filter((e) => e.type === 'blob' && (e.path === 'content.xml' || e.path.endsWith('/content.xml')))
-            .map((e) => e.path.slice(0, -'content.xml'.length).replace(/\/$/, ''))
-            .filter((dir) => !dir.split('/').some((segment) => segment.startsWith('.') || segment === 'node_modules'));
+        tree = await api(`/repos/${repo.owner}/${repo.repo}/git/trees/${encodeURIComponent(repo.defaultBranch)}?recursive=1`);
     } catch (error) {
         if (error instanceof GitHubError && error.status === 409) return []; // empty repository
         throw error;
     }
+    const blobs = new Map(tree.tree.filter((e) => e.type === 'blob').map((e) => [e.path, e.sha]));
+    const resources: Resource[] = [];
+    for (const [file, sha] of blobs) {
+        if (file !== 'content.xml' && !file.endsWith('/content.xml')) continue;
+        const path = file.slice(0, -'content.xml'.length).replace(/\/$/, '');
+        if (path.split('/').some((segment) => segment.startsWith('.') || segment === 'node_modules')) continue;
+        resources.push({ repo, path, contentSha: sha, screenshotSha: blobs.get(path ? `${path}/screenshot.png` : 'screenshot.png') });
+    }
+    return resources;
+}
+
+export async function blobBytes(api: Api, repo: RepoSummary, sha: string): Promise<Uint8Array> {
+    return fromBase64((await api(`/repos/${repo.owner}/${repo.repo}/git/blobs/${sha}`)).content);
+}
+
+/** The resource title (pp_title) from content.xml, if any. */
+export function readTitle(xml: string): string | undefined {
+    const raw = xml.match(/<key>pp_title<\/key>\s*<value>([^<]*)<\/value>/)?.[1];
+    if (!raw) return undefined;
+    const entities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+    return raw.replace(/&(#x?[0-9a-f]+|\w+);/gi, (match, e: string) =>
+        e[0] === '#' ? String.fromCodePoint(Number.parseInt(e.slice(e[1] === 'x' ? 2 : 1), e[1] === 'x' ? 16 : 10)) : (entities[e] ?? match),
+    ).trim() || undefined;
 }
 
 /** The GitHub Pages workflow template with the project's branch and folder filled in. */

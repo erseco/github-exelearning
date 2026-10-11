@@ -1,6 +1,7 @@
 :root {
   color-scheme: light;
   --accent: #00a99d;
+  --accent-ink: #00756d; /* 4.5:1 for text and button labels */
   --ink: #1f2937;
   --muted: #6b7280;
   --line: #e5e7eb;
@@ -42,7 +43,7 @@ input { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-
 #editor { flex: 1; min-height: 0; }
 #editor iframe { display: block; width: 100%; height: 100%; border: 0; }
 
-#landing { max-width: 640px; margin: 12vh auto 0; padding: 0 20px; }
+#landing { width: 100%; max-width: 640px; margin: 12vh auto 0; padding: 0 20px; }
 #landing h1 { display: flex; align-items: center; gap: 10px; font-size: 28px; }
 #landing .row { display: flex; gap: 8px; margin-top: 6px; }
 #landing .row input { flex: 1; }
@@ -70,16 +71,61 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
 
 body.callback { display: grid; place-items: center; color: var(--muted); }
 
-#mine h2 { font-size: 16px; margin: 24px 0 8px; }
-#repos { list-style: none; padding: 0; margin: 0; border: 1px solid var(--line); border-radius: 8px; max-height: 50vh; overflow: auto; }
-#repos li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 12px; border-top: 1px solid var(--line); }
-#repos li:first-child { border-top: 0; }
-#repos .name { font-weight: 600; }
-#repos .muted, .links { color: var(--muted); }
-#repos a { color: var(--accent); }
+#mine h2 { font-size: 18px; margin: 32px 0 2px; }
+#landing.wide { max-width: 960px; }
 .badge { font-size: 11px; border: 1px solid var(--line); border-radius: 10px; padding: 0 6px; color: var(--muted); }
 button.link { border: 0; padding: 0; background: none; color: var(--accent); text-decoration: underline; }
 dialog fieldset { border: 0; padding: 0; margin: 0 0 8px; }
 #pages-dialog ol { padding-left: 20px; }
 #pages-dialog li { margin-bottom: 8px; }
 #pages-dialog a { color: var(--accent); }
+
+.signin-card { margin-top: 28px; padding: 24px 28px; border: 1px solid var(--line); border-radius: 14px; }
+.signin-card h2 { margin: 0 0 6px; font-size: 17px; }
+.signin-card p { margin: 0 0 14px; line-height: 1.5; }
+.signin-card p:last-child { margin: 0; }
+button.github { min-height: 44px; padding: 0 18px; font-size: 15px; }
+.divider { display: flex; align-items: center; gap: 14px; margin: 28px 0 20px; color: var(--muted); font-size: 13px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+#open-form label { font-weight: 600; }
+#open-form .hint { font-size: 13px; margin: 8px 0 0; }
+#open-form.compact { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 24px; font-size: 13px; color: var(--muted); }
+#open-form.compact label { font-weight: normal; }
+#open-form.compact .row { margin: 0; }
+#open-form.compact input { width: 260px; font-size: 13px; padding: 6px 10px; }
+#open-form.compact button { font-size: 13px; padding: 6px 12px; background: #fff; color: var(--ink); border-color: var(--line); font-weight: normal; }
+#open-form.compact .hint { display: none; }
+.resources-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.resources-head p { margin: 0; }
+.view-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.view-toggle button { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 0; min-height: 36px; color: var(--muted); }
+.view-toggle button[aria-pressed="true"] { background: #f3f4f6; color: var(--ink); font-weight: 600; }
+#repos { list-style: none; padding: 0; margin: 0; }
+#repos.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+#repos.list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; }
+.card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+.list .card { flex-direction: row; align-items: center; gap: 14px; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 10px 12px; }
+.list .card:first-child { border-top: 0; }
+.thumb { aspect-ratio: 16 / 9; background: #f3f4f6; display: grid; place-items: center; overflow: hidden; }
+.thumb img.shot { width: 100%; height: 100%; object-fit: cover; }
+.thumb.empty { color: var(--muted); font-size: 12px; text-align: center; gap: 4px; align-content: center; }
+.thumb.empty img { width: 28px; height: 28px; filter: grayscale(1); opacity: .5; justify-self: center; }
+.list .thumb { width: 96px; flex: none; border-radius: 6px; }
+.list .thumb.empty { font-size: 10px; }
+.list .thumb.empty img { width: 18px; height: 18px; }
+.list .card .actions { order: 2; }
+.list .card .actions .edit { order: 2; }
+.card .info { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 16px; min-width: 0; flex: 1; }
+.list .card .info { flex-direction: row; align-items: center; justify-content: space-between; padding: 0; flex-wrap: wrap; }
+.card .title { font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
+.card .meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.card .text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.card .actions { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+.card .actions a { color: var(--accent-ink); }
+a.button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 8px; background: var(--accent-ink); color: #fff !important; font-weight: 600; font-size: 14px; text-decoration: none; }
+a.button:hover { background: #00524c; }
+li.searching { color: var(--muted); font-size: 14px; display: flex; align-items: center; justify-content: center; min-height: 120px; border: 1.5px dashed var(--line); border-radius: 12px; padding: 16px; }
+.list li.searching { min-height: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; justify-content: flex-start; }
+#other-repos { margin-top: 20px; font-size: 14px; color: var(--muted); }
+#other-repos summary { cursor: pointer; }
+#other-list { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; }

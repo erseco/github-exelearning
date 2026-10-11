@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { createApi, findProjects, listAccessibleRepos, loadProject, pagesWorkflow, parseTarget, saveProject, type Project } from '../../src/app/github.ts';
+import { createApi, findProjects, listAccessibleRepos, loadProject, pagesWorkflow, parseTarget, readTitle, saveProject, type Project } from '../../src/app/github.ts';
 import { planSave } from '../../src/sync.ts';
 import { exchangeToken } from '../../worker/index.ts';
 
@@ -204,10 +204,15 @@ test('listAccessibleRepos merges installations and pages, newest push first', as
 });
 
 test('findProjects lists folders with content.xml, skipping hidden folders and empty repositories', async () => {
-    const tree = { tree: ['content.xml', 'curso/uno/content.xml', '.github/content.xml', 'node_modules/x/content.xml', 'docs/readme.md'].map((path) => ({ path, type: 'blob' })) };
+    const paths = ['content.xml', 'screenshot.png', 'curso/uno/content.xml', '.github/content.xml', 'node_modules/x/content.xml', 'docs/readme.md'];
+    const tree = { tree: paths.map((path) => ({ path, type: 'blob', sha: `sha:${path}` })) };
     const ok = (async () => new Response(JSON.stringify(tree))) as typeof fetch;
     const summary = { owner: 'o', repo: 'r', private: false, defaultBranch: 'main', pushedAt: '' };
-    assert.deepEqual(await findProjects(createApi('t', ok), summary), ['', 'curso/uno']);
+    const found = await findProjects(createApi('t', ok), summary);
+    assert.deepEqual(found.map((r) => [r.path, r.contentSha, r.screenshotSha]), [
+        ['', 'sha:content.xml', 'sha:screenshot.png'],
+        ['curso/uno', 'sha:curso/uno/content.xml', undefined],
+    ]);
     const empty = (async () => new Response(JSON.stringify({ message: 'Git Repository is empty.' }), { status: 409 })) as typeof fetch;
     assert.deepEqual(await findProjects(createApi('t', empty), summary), []);
 });
@@ -222,4 +227,10 @@ test('pagesWorkflow fills the branch and the project folder', () => {
     assert.match(sub, /PROJECT_DIR: cursos\/agua /);
     assert.match(sub, /- 'cursos\/agua\/content\/resources\/\*\*'/);
     assert.ok(!sub.includes('__'));
+});
+
+test('readTitle reads pp_title and decodes XML entities', () => {
+    const xml = '<odeProperty>\n  <key>pp_title</key>\n  <value>El ciclo del agua &amp; la lluvia &#183; Libro</value>\n</odeProperty>';
+    assert.equal(readTitle(xml), 'El ciclo del agua & la lluvia · Libro');
+    assert.equal(readTitle('<ode/>'), undefined);
 });

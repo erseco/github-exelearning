@@ -55,12 +55,13 @@ async function github(route) {
         const file = [...files.keys()].find((p) => sha(p) === blob[1]);
         return file ? json({ sha: blob[1], encoding: 'base64', content: files.get(file).toString('base64') }) : json({ message: 'Not Found' }, 404);
     }
+    if (path === '/user') return json({ login: 'teacher' });
     if (path === '/user/installations') return json({ installations: [{ id: 1, account: { login: 'teacher' }, repository_selection: 'all' }] });
     if (path === '/user/installations/1/repositories') {
         const repo = (name, pushed) => ({ full_name: `teacher/${name}`, name, owner: { login: 'teacher' }, private: name === 'notas', default_branch: 'main', pushed_at: pushed });
         return json({ repositories: [repo('notas', '2026-10-09T10:00:00Z'), repo('libro', '2026-10-01T10:00:00Z')] });
     }
-    if (path === '/repos/teacher/libro/git/trees/main') return json({ tree: [...files.keys()].map((p) => ({ path: p, type: 'blob' })) });
+    if (path === '/repos/teacher/libro/git/trees/main') return json({ tree: [...files.keys()].map((p) => ({ path: p, type: 'blob', sha: sha(p) })) });
     if (path === '/repos/teacher/notas/git/trees/main') return json({ tree: [{ path: 'README.md', type: 'blob' }] });
     if (path === '/repos/teacher/libro/git/refs') return json({ ref: body.ref });
     if (path === '/repos/teacher/libro/pulls') return json({ html_url: 'https://github.com/teacher/libro/pull/1' });
@@ -214,25 +215,37 @@ try {
 
     // Landing page while signed in: the repositories the app can reach, resources first.
     await page.goto(APP);
-    await page.locator('#repos li a').first().waitFor();
-    const rows = await page.locator('#repos li').allInnerTexts();
-    assert.match(rows[0], /^teacher\/libro\s+root$/);
-    assert.match(rows[1], /^teacher\/notas\s+private\s+no eXeLearning resource$/);
-    await page.screenshot({ path: `${shots}6-your-repositories.png` });
-    await page.locator('#repos li a', { hasText: 'root' }).click();
+    const card = page.locator('#repos li.card');
+    await card.locator('.title', { hasText: 'El ciclo del agua · Libro' }).waitFor();
+    await card.locator('img.shot').waitFor();
+    assert.match(await card.locator('.meta').innerText(), /^teacher\/libro · root/);
+    await page.locator('#other-summary', { hasText: 'Repositories without eXeLearning resources (1)' }).waitFor();
+    assert.equal(await page.locator('#repos li.searching').count(), 0);
+    assert.equal(await page.locator('#repos-summary').innerText(), '1 resource(s) in 1 repositories · signed in as teacher');
+    assert.equal(await page.locator('#repos-box #open-form.compact label').innerText(), 'Is the resource in another repository?');
+    await page.screenshot({ path: `${shots}6-your-resources-grid.png` });
+    await page.locator('#view-list').click();
+    assert.equal(await page.locator('#repos').getAttribute('class'), 'list');
+    await page.screenshot({ path: `${shots}7-your-resources-list.png` });
+    await page.reload();
+    await card.locator('a.edit').waitFor();
+    assert.equal(await page.locator('#view-list').getAttribute('aria-pressed'), 'true', 'the view choice is remembered');
+    await card.locator('a.edit').click();
     await page.waitForURL(/\?repo=teacher%2Flibro/);
     await page.locator('#save:not([disabled])').waitFor({ timeout: 120_000 });
-    step('"Your repositories" lists teacher/libro (resource at the root) before teacher/notas, and opens it');
+    step('"Your eXeLearning resources": a card with the title and screenshot, grid/list toggle remembered, repositories without resources apart; Edit opens it');
 
     // Signed out: the landing page offers to sign in, and the box accepts a repository URL.
     await page.goto(APP);
     await page.locator('#logout-landing').click();
     await page.locator('#signin').waitFor();
+    assert.equal(await page.locator('#divider').isVisible(), true);
+    await page.screenshot({ path: `${shots}8-signed-out.png` });
     const signinPopup = page.waitForEvent('popup');
     await page.locator('#signin').click();
     await signinPopup;
-    await page.locator('#repos li a').first().waitFor();
-    step('signing in from the landing page lists the repositories');
+    await page.locator('#repos li.card a.edit').waitFor();
+    step('signing in from the landing page lists the resources');
     await page.locator('#repo-input').fill('https://github.com/teacher/libro');
     await page.locator('#open-button').click();
     await page.waitForURL(/\?repo=teacher%2Flibro/);

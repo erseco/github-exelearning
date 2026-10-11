@@ -34,23 +34,39 @@
 <main id="landing">
   <h1><img src="/editor/exelearning.png" alt="" width="40" height="40"> eXeLearning · GitHub</h1>
   <p id="tagline"></p>
+  <p id="message" role="alert"></p>
+  <ul id="candidates"></ul>
+  <section id="signin-card" class="signin-card" hidden>
+    <h2 id="see-all"></h2>
+    <p class="muted" id="see-all-hint"></p>
+    <p><button type="button" id="signin" class="github"><svg width="18" height="18" aria-hidden="true"><use href="#github-mark"/></svg><span id="signin-label"></span></button></p>
+  </section>
+  <div class="divider" id="divider" hidden><span id="or-open"></span></div>
   <form id="open-form">
     <label for="repo-input" id="repo-label"></label>
     <div class="row">
       <input id="repo-input" name="repo" placeholder="owner/repository" required autocomplete="off" spellcheck="false">
       <button class="primary" id="open-button"></button>
     </div>
+    <p class="muted hint" id="open-hint"></p>
   </form>
-  <p id="message" role="alert"></p>
-  <ul id="candidates"></ul>
   <section id="mine">
-    <p id="signin-row" hidden>
-      <button type="button" id="signin" class="github"><svg width="16" height="16" aria-hidden="true"><use href="#github-mark"/></svg><span id="signin-label"></span></button>
-      <span class="muted" id="signin-hint"></span>
-    </p>
     <div id="repos-box" hidden>
-      <h2 id="repos-title"></h2>
-      <ul id="repos"></ul>
+      <div class="resources-head">
+        <div>
+          <h2 id="repos-title"></h2>
+          <p class="muted" id="repos-summary"></p>
+        </div>
+        <div class="view-toggle" role="group" id="view-toggle">
+          <button type="button" id="view-grid" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg><span id="view-grid-label"></span></button>
+          <button type="button" id="view-list" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg><span id="view-list-label"></span></button>
+        </div>
+      </div>
+      <ul id="repos" class="grid"></ul>
+      <details id="other-repos" hidden>
+        <summary id="other-summary"></summary>
+        <ul id="other-list"></ul>
+      </details>
       <p class="links"><button type="button" class="link" id="more-access"></button> · <button type="button" class="link" id="logout-landing"></button></p>
     </div>
   </section>

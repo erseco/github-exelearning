@@ -272,6 +272,7 @@ function resourceCard(api: Api, resource: Resource): HTMLLIElement {
     const name = `${repo.owner}/${repo.repo}`;
     const title = element('span', { className: 'title', textContent: path ? path.split('/').pop() : repo.repo });
     const meta = element('span', { className: 'meta', textContent: [name, path || t('root'), updatedAgo(repo.pushedAt)].filter(Boolean).join(' · ') });
+    meta.title = meta.textContent ?? '';
     if (repo.private) meta.append(' ', element('span', { className: 'badge', textContent: t('private') }));
     const thumb = element('div', { className: 'thumb' });
     const edit = element('a', { className: 'button edit', href: query({ owner: repo.owner, repo: repo.repo, path: '' }, undefined, path) }, t('edit'));

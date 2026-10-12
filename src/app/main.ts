@@ -35,6 +35,15 @@ function toast(text: string, link?: { href: string; label: string }, action?: { 
     if (!action) box.dataset.timer = String(setTimeout(() => (box.hidden = true), link ? 15_000 : 6_000));
 }
 
+/** Modal "Saving…" that blocks the page and the editor while a save runs. */
+function savingModal(open: boolean) {
+    const dialog = $('saving-dialog') as HTMLDialogElement;
+    $('saving-text').textContent = t('saving');
+    dialog.oncancel = (event) => event.preventDefault(); // Escape must not hide it mid-save
+    if (open && !dialog.open) dialog.showModal();
+    if (!open) dialog.close();
+}
+
 function setStatus(text: string, isDirty = dirty, busy = false) {
     dirty = isDirty;
     $('status').textContent = text;
@@ -167,6 +176,7 @@ async function save() {
     let popup: Window | undefined;
     try {
         setStatus(t('saving'), dirty, true);
+        savingModal(true);
         const { bytes, requestId } = await editor.exportElpx();
         const exported: Files = readElpx(bytes);
         exported.set('content.xml', dropScreenshotProperty(exported.get('content.xml') as Uint8Array));
@@ -181,10 +191,12 @@ async function save() {
         let token = await currentToken();
         let access = token ? await appCanAccess(createApi(token), owner, project.repoId).catch(() => false) : undefined;
         setStatus(previous);
+        savingModal(false);
         const options = await askSave([...plan.write, ...plan.removed.map((p) => `− ${p}`)], plan.removed, () => !hasUsableToken() || access === false);
         if (!options) return;
         popup = options.popup;
         setStatus(t('saving'), dirty, true);
+        savingModal(true);
 
         if (!token) {
             if (!popup) throw new Error(t('loginNeeded'));
@@ -214,6 +226,7 @@ async function save() {
         toast(status === 403 || status === 404 ? t('noAccess', { repo: repoName(project.target) }) : errorText(error));
     } finally {
         popup?.close();
+        savingModal(false);
         saving = false;
     }
 }

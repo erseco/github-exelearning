@@ -49,6 +49,7 @@ export function createApi(token?: string, fetchImpl: typeof fetch = fetch): Api 
                 ...(init.body ? { 'Content-Type': 'application/json' } : {}),
             },
             body: init.body ? JSON.stringify(init.body) : undefined,
+            cache: 'no-cache', // GitHub sends max-age=60: a cached branch head made saves retry on a stale commit
         });
         if (!response.ok) {
             const detail = await response.json().catch(() => ({}));

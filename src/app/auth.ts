@@ -113,6 +113,12 @@ export async function login(popup: Window, config: AppConfig, repositoryId?: num
     return exchange({ code: params.get('code'), code_verifier: verifier, redirect_uri: CALLBACK, repository_id: repositoryId });
 }
 
+/**
+ * GitHub rejects a login limited to repository_id (instead of ignoring it) when the app is not
+ * installed on that repository: "Your app doesn't have permission for the given target".
+ */
+export const isNotInstalledError = (error: unknown) => error instanceof Error && /permission for the given target/i.test(error.message);
+
 /** Ask the user to install the GitHub App on the repository owner's account (choosing repositories). */
 export async function install(popup: Window, config: AppConfig, ownerId?: number): Promise<void> {
     popup.location.href = ownerId

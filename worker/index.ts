@@ -48,7 +48,7 @@ export async function exchangeToken(request: Request, env: Env, fetchImpl: typeo
         params.set('code', body.code);
         if (typeof body.code_verifier === 'string') params.set('code_verifier', body.code_verifier);
         if (typeof body.redirect_uri === 'string' && body.redirect_uri.startsWith(`${env.APP_ORIGIN}/`)) params.set('redirect_uri', body.redirect_uri);
-        // Limits the token to the repository being edited (ignored if the app cannot access it).
+        // Limits the token to the repository being edited (GitHub rejects the login if the app is not installed there).
         if (Number.isSafeInteger(body.repository_id)) params.set('repository_id', String(body.repository_id));
     } else if (typeof body.refresh_token === 'string') {
         params.set('grant_type', 'refresh_token');

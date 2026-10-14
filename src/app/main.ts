@@ -2,7 +2,7 @@
 // editor and save it back as a commit (or a pull request).
 import { buildElpx, dropScreenshotProperty, type Files, readElpx } from '../elpx.ts';
 import { planSave } from '../sync.ts';
-import { type AppConfig, appCanAccess, currentToken, hasUsableToken, install, login, logout, openPopup } from './auth.ts';
+import { type AppConfig, appCanAccess, currentToken, hasUsableToken, install, isNotInstalledError, login, logout, openPopup } from './auth.ts';
 import { EditorFrame } from './editor.ts';
 import {
     type Api, blobBytes, createApi, findProjects, GitHubError, listAccessibleRepos, loadProject, pagesWorkflow, type Project, parseTarget, type RepoSummary,
@@ -200,7 +200,16 @@ async function save() {
 
         if (!token) {
             if (!popup) throw new Error(t('loginNeeded'));
-            token = await login(popup, config, project.repoId);
+            const github = popup;
+            const { ownerId, repoId } = project;
+            token = await login(github, config, repoId).catch(async (error) => {
+                if (!isNotInstalledError(error)) throw error;
+                toast(t('installNeeded', { repo: `${owner}/${repo}` }));
+                await install(github, config, ownerId);
+                return login(github, config, repoId).catch((retry) => {
+                    throw isNotInstalledError(retry) ? new Error(t('noAccess', { repo: `${owner}/${repo}` })) : retry;
+                });
+            });
         }
         const api = createApi(token);
         if (access !== true) access = await appCanAccess(api, owner, project.repoId);

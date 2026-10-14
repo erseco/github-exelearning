@@ -27,7 +27,8 @@ const walk = (dir, prefix = '') => {
     }
 };
 walk(FIXTURE);
-const sha = (path) => createHash('sha1').update(path).digest('hex');
+// Real git blob SHAs, so unchanged published files are recognized.
+const sha = (path) => createHash('sha1').update(`blob ${files.get(path).length}\0`).update(files.get(path)).digest('hex');
 const writes = [];
 let blobs = 0;
 
@@ -142,10 +143,18 @@ try {
     await idevice.click({ position: { x: 5, y: 5 } });
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+S' : 'Control+S');
     await page.locator('#save-dialog[open]').waitFor();
-    const listed = await page.locator('#save-files li').allInnerTexts();
+    // The fixture commits its exported website, so saving it too is offered and checked.
+    assert.ok(await page.locator('#write-site').isChecked());
+    let listed = await page.locator('#save-files li').allInnerTexts();
+    assert.ok(listed.includes('index.html') && listed.at(-1) === 'content.xml', 'the website is listed, content.xml last');
+    assert.ok(!listed.some((p) => p.startsWith('theme/')), 'the theme is never written');
+    await page.locator('#write-site').uncheck();
+    listed = await page.locator('#save-files li').allInnerTexts();
     assert.deepEqual(listed, ['content.xml']);
+    await page.locator('#write-site').check();
+    listed = await page.locator('#save-files li').allInnerTexts();
     await page.screenshot({ path: `${shots}2-save-dialog.png` });
-    step('Ctrl/Cmd+S opens "Save to GitHub" listing only content.xml');
+    step('Ctrl/Cmd+S opens "Save to GitHub" with content.xml and, checked by default, the changed website files');
 
     const popup = page.waitForEvent('popup');
     await page.locator('#confirm-save').click();
@@ -157,17 +166,20 @@ try {
     assert.equal(exchanged.code, 'test-code');
     assert.ok(exchanged.code_verifier && exchanged.repository_id === 42, 'PKCE verifier and repository restriction are sent');
     const tree = writes.find((w) => w.path.endsWith('/git/trees'));
-    assert.deepEqual(tree.body.tree.map((e) => e.path), ['content.xml']);
+    const paths = tree.body.tree.map((e) => e.path);
+    assert.deepEqual(paths, listed);
     assert.equal(tree.body.base_tree, 't1');
-    assert.equal(writes.filter((w) => w.path.endsWith('/git/blobs')).length, 1);
-    const content = Buffer.from(writes.find((w) => w.path.endsWith('/git/blobs')).body.content, 'base64').toString();
+    assert.equal(writes.filter((w) => w.path.endsWith('/git/blobs')).length, paths.length);
+    const blobs = writes.filter((w) => w.path.endsWith('/git/blobs')).map((w) => Buffer.from(w.body.content, 'base64').toString());
+    assert.ok(blobs.some((b) => b.includes(MARKER) && b.includes('<html')), 'the website contains the edit');
+    const content = blobs.find((b) => b.includes('<ode'));
     assert.ok(content.includes(MARKER), 'the commit contains the edit');
     assert.ok(!content.includes('pp_screenshot'), 'no duplicated screenshot in content.xml');
     assert.deepEqual(writes.find((w) => w.path.endsWith('/git/commits')).body.parents, ['c1']);
     assert.deepEqual(writes.find((w) => w.method === 'PATCH').body, { sha: 'c2', force: false });
     assert.ok(writes.every((w) => w.auth === 'Bearer test-token'));
     assert.equal(await page.locator('#status.dirty').count(), 0);
-    step('login (PKCE, token limited to the repository) and one commit with only content.xml, fast-forward on main');
+    step('login (PKCE, token limited to the repository) and one commit with content.xml and the website, fast-forward on main');
 
     writes.length = 0;
     await page.locator('#save').click();

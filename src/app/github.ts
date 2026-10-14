@@ -75,8 +75,20 @@ export interface Project {
     files: Files;
     /** Git modes of those files, kept when they are rewritten. */
     modes: Map<string, string>;
+    /** Git blob SHA of every file in the project folder, to skip unchanged published files. */
+    shas: Map<string, string>;
     /** Folders below the requested one that contain a content.xml (when the requested one does not). */
     candidates: string[];
+}
+
+/** Git blob SHA-1 of some bytes, as in a tree entry. */
+export async function gitBlobSha(bytes: Uint8Array): Promise<string> {
+    const header = new TextEncoder().encode(`blob ${bytes.length}\0`);
+    const data = new Uint8Array(header.length + bytes.length);
+    data.set(header);
+    data.set(bytes, header.length);
+    const hash = new Uint8Array(await crypto.subtle.digest('SHA-1', data));
+    return Array.from(hash, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 const isImportPath = (path: string) =>
@@ -119,10 +131,11 @@ export async function loadProject(api: Api, target: Target, authenticated: boole
     if (tree.truncated) throw new GitHubError(413, 'The repository is too large to list.');
 
     const prefix = target.path ? `${target.path}/` : '';
-    const entries = (tree.tree as { path: string; type: string; mode: string; sha: string }[])
+    const blobs = (tree.tree as { path: string; type: string; mode: string; sha: string }[])
         .filter((e) => e.type === 'blob' && e.mode !== '120000' && e.path.startsWith(prefix))
         .map((e) => ({ ...e, rel: e.path.slice(prefix.length) }))
-        .filter((e) => isSafePath(e.rel) && isImportPath(e.rel) && !e.rel.split('/').some((s) => s.startsWith('.')));
+        .filter((e) => isSafePath(e.rel) && !e.rel.split('/').some((s) => s.startsWith('.')));
+    const entries = blobs.filter((e) => isImportPath(e.rel));
 
     const candidates = entries.some((e) => e.rel === 'content.xml')
         ? []
@@ -158,6 +171,7 @@ export async function loadProject(api: Api, target: Target, authenticated: boole
         treeSha,
         files,
         modes,
+        shas: new Map(blobs.map((e) => [e.rel, e.sha])),
         candidates,
     };
 }

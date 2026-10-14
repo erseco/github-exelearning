@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { createApi, findProjects, listAccessibleRepos, loadProject, pagesWorkflow, parseTarget, readTitle, saveProject, type Project } from '../../src/app/github.ts';
+import { createApi, findProjects, gitBlobSha, listAccessibleRepos, loadProject, pagesWorkflow, parseTarget, readTitle, saveProject, type Project } from '../../src/app/github.ts';
 import { planSave } from '../../src/sync.ts';
 import { exchangeToken } from '../../worker/index.ts';
 
@@ -75,6 +75,7 @@ test('loadProject reads only the import files of the project folder, anonymously
     const project = await loadProject(createApi(undefined, gh.fetchImpl), { owner: 'o', repo: 'r', path: 'curso' }, false, gh.fetchImpl);
     assert.deepEqual([...project.files.keys()].sort(), ['content.xml', 'content/resources/a.jpg', 'content/resources/old.jpg', 'theme/style.css']);
     assert.equal(new TextDecoder().decode(project.files.get('content.xml')), '<ode>v1</ode>');
+    assert.ok(project.shas.has('html/index.html') && !project.shas.has('.github/x'), 'blob SHAs cover published files too');
     assert.deepEqual([project.branch, project.commitSha, project.treeSha, project.repoId, project.ownerId], ['main', 'c1', 't1', 7, 3]);
     assert.ok(gh.calls.filter((c) => c.path.includes('/git/blobs/')).length === 0, 'public files come from raw, not the API');
 
@@ -233,4 +234,9 @@ test('readTitle reads pp_title and decodes XML entities', () => {
     const xml = '<odeProperty>\n  <key>pp_title</key>\n  <value>El ciclo del agua &amp; la lluvia &#183; Libro</value>\n</odeProperty>';
     assert.equal(readTitle(xml), 'El ciclo del agua & la lluvia · Libro');
     assert.equal(readTitle('<ode/>'), undefined);
+});
+
+test('gitBlobSha matches git hash-object', async () => {
+    assert.equal(await gitBlobSha(new Uint8Array()), 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391');
+    assert.equal(await gitBlobSha(new TextEncoder().encode('hello\n')), 'ce013625030ba8dba906f756967f9e9ca394464a');
 });

@@ -27,9 +27,11 @@ eXeLearning (see `RESEARCH.md`, *Path to eXeLearning core*).
   - The client secret is a Worker secret (`wrangler secret put GITHUB_CLIENT_SECRET`) and
     never goes in files.
   - `GITHUB_CLIENT_ID`/`GITHUB_APP_SLUG` in `wrangler.jsonc` are public.
-- **A save writes only the project source**: `content.xml`, `content/resources/**`,
-  `screenshot.png` (`src/sync.ts`). Never `theme/`, published files or anything else in the
-  user's repository. Deleting files needs explicit consent.
+- **A save writes the project source**: `content.xml`, `content/resources/**`,
+  `screenshot.png` (`src/sync.ts`). Published files (`index.html`, `html/`, `libs/`…) only
+  when the user ticks *Also save the exported website*, and only those whose git blob SHA
+  changed. Never `theme/` or anything else in the user's repository. Deleting files needs
+  explicit consent.
 - **Untrusted input:** ZIPs from the editor go through `readElpx` (path and size limits);
   paths through `isSafePath`.
 - Use plain browser APIs and minimal dependencies (runtime: `fflate` only). No frameworks.

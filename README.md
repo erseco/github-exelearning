@@ -49,10 +49,12 @@ Once a resource is open, *⋯ → Copy README badge* gives you the exact snippet
    it needs no extra permission for the app.
 
 **What a save writes:** `content.xml`, new or changed files in `content/resources/`, and
-`screenshot.png`, in a single commit. It never touches `theme/`, the published pages
-(`index.html`, `html/`, `libs/`…) or any other file in the repository. Files you delete in
-eXeLearning's file manager are deleted only if you tick that option. The website is rebuilt by
-the Pages workflow (step 5), not committed: the repository keeps only the source.
+`screenshot.png`, in a single commit. It never touches `theme/` or files outside the export.
+Files you delete in eXeLearning's file manager are deleted only if you tick that option. The
+website is normally rebuilt by the Pages workflow (step 5), so the repository keeps only the
+source. *Also save the exported website* adds the changed published files (`index.html`,
+`html/`, `libs/`…) to the commit; it is ticked by default when the folder already has an
+`index.html`.
 
 Without write access to the repository (for example, a student opening a teacher's resource),
 use *⋯ → Download .elpx*.
@@ -154,8 +156,8 @@ One-time GitHub App setup:
 
 - **No write access:** without write access to the repository, saving is not possible. A
   fork plus pull request flow is not implemented yet; use *Download .elpx*.
-- **Published HTML committed to the repository** (like exelearning-style-book) is not
-  regenerated. Use the Pages workflow, which publishes the rebuilt site instead.
+- **Published HTML committed to the repository** is rewritten only with *Also save the
+  exported website*, and pages removed from the resource leave their old `html/` file behind.
 - **Style prompt:** the editor asks to install a resource's custom style in every session.
   Accepting marks the resource as modified, and the first save normalizes `content.xml`
   (asset paths, version and date properties).

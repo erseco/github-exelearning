@@ -5,7 +5,7 @@ import { planSave } from '../sync.ts';
 import { type AppConfig, appCanAccess, currentToken, hasUsableToken, install, isNotInstalledError, login, logout, openPopup } from './auth.ts';
 import { EditorFrame } from './editor.ts';
 import {
-    type Api, blobBytes, createApi, findProjects, GitHubError, listAccessibleRepos, loadProject, pagesWorkflow, type Project, parseTarget, type RepoSummary,
+    type Api, blobBytes, createApi, findProjects, GitHubError, gitBlobSha, listAccessibleRepos, loadProject, pagesWorkflow, type Project, parseTarget, type RepoSummary,
     readTitle, type Resource, saveProject, type Target,
 } from './github.ts';
 import { lang, t } from './i18n.ts';
@@ -137,9 +137,24 @@ function showRepoLink() {
 }
 
 /** Collect commit options; resolves in the click handler so a GitHub popup can still be opened. */
-function askSave(files: string[], removed: string[], needPopup: () => boolean): Promise<{ message: string; pullRequest: boolean; deleteRemoved: boolean; popup?: Window } | undefined> {
+function askSave(
+    files: string[],
+    removed: string[],
+    site: string[],
+    needPopup: () => boolean,
+): Promise<{ message: string; pullRequest: boolean; deleteRemoved: boolean; writeSite: boolean; popup?: Window } | undefined> {
     const dialog = $<HTMLDialogElement>('save-dialog');
-    $('save-files').replaceChildren(...files.map((path) => Object.assign(document.createElement('li'), { textContent: path })));
+    const writeSite = $<HTMLInputElement>('write-site');
+    const list = () =>
+        $('save-files').replaceChildren(
+            ...[...(writeSite.checked ? site : []), ...files].map((path) => Object.assign(document.createElement('li'), { textContent: path })),
+        );
+    $('site-row').hidden = site.length === 0;
+    $('site-label').textContent = t('writeSite', { n: site.length });
+    // Repositories that already commit the exported website keep it up to date by default.
+    writeSite.checked = site.length > 0 && !!project?.shas.has('index.html');
+    writeSite.onchange = list;
+    list();
     $('delete-row').hidden = removed.length === 0;
     $('delete-label').textContent = t('deleteRemoved', { n: removed.length });
     $<HTMLInputElement>('delete-removed').checked = false;
@@ -153,7 +168,7 @@ function askSave(files: string[], removed: string[], needPopup: () => boolean): 
     return new Promise((resolve) => {
         $('confirm-save').onclick = (event) => {
             const message = $<HTMLInputElement>('commit-message').value.trim();
-            if (!message) return;
+            if (!message || (!files.length && !writeSite.checked)) return;
             event.preventDefault();
             let popup: Window | undefined;
             try {
@@ -162,7 +177,7 @@ function askSave(files: string[], removed: string[], needPopup: () => boolean): 
                 toast(errorText(error));
             }
             dialog.close();
-            resolve({ message, pullRequest: $<HTMLInputElement>('to-pr').checked, deleteRemoved: $<HTMLInputElement>('delete-removed').checked, popup });
+            resolve({ message, pullRequest: $<HTMLInputElement>('to-pr').checked, deleteRemoved: $<HTMLInputElement>('delete-removed').checked, writeSite: writeSite.checked, popup });
         };
         dialog.onclose = () => resolve(undefined);
     });
@@ -181,7 +196,15 @@ async function save() {
         const exported: Files = readElpx(bytes);
         exported.set('content.xml', dropScreenshotProperty(exported.get('content.xml') as Uint8Array));
         const plan = planSave(exported, project.files, project.files);
-        if (!plan.write.length && !plan.removed.length) {
+        // Published files (index.html, html/, libs/…) whose bytes differ from the repository.
+        const siteShas = new Map<string, string>();
+        for (const path of planSave(exported, project.files, project.files, true).write) {
+            if (plan.write.includes(path)) continue;
+            const sha = await gitBlobSha(exported.get(path) as Uint8Array);
+            if (sha !== project.shas.get(path)) siteShas.set(path, sha);
+        }
+        const site = [...siteShas.keys()];
+        if (!plan.write.length && !plan.removed.length && !(site.length && project.shas.has('index.html'))) {
             editor.markClean(requestId);
             setStatus('', false);
             return toast(t('noChanges'));
@@ -192,8 +215,9 @@ async function save() {
         let access = token ? await appCanAccess(createApi(token), owner, project.repoId).catch(() => false) : undefined;
         setStatus(previous);
         savingModal(false);
-        const options = await askSave([...plan.write, ...plan.removed.map((p) => `− ${p}`)], plan.removed, () => !hasUsableToken() || access === false);
+        const options = await askSave([...plan.write, ...plan.removed.map((p) => `− ${p}`)], plan.removed, site, () => !hasUsableToken() || access === false);
         if (!options) return;
+        if (options.writeSite) plan.write.unshift(...site); // content.xml stays last
         popup = options.popup;
         setStatus(t('saving'), dirty, true);
         savingModal(true);
@@ -224,6 +248,7 @@ async function save() {
         const result = await saveProject(api, project, plan, exported, options);
         for (const path of plan.write) project.files.set(path, exported.get(path) as Uint8Array);
         for (const path of plan.removed) project.files.delete(path); // asked once; kept files are no longer tracked
+        if (options.writeSite) for (const [path, sha] of siteShas) project.shas.set(path, sha);
         Object.assign(project, { commitSha: result.commitSha, treeSha: result.treeSha, branch: result.branch, protectedBranch: false });
         showRepoLink();
         editor.markClean(requestId);

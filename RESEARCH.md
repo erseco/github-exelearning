@@ -194,9 +194,9 @@ VS Code for the Web (`@vscode/test-web`). Findings worth keeping:
 - **Custom styles:** the editor asks *Import style?*. The answer is stored per editor origin.
   Accepting marks the project dirty even though the style does not change (upstream).
 - **Other upstream observations:** the exported skip-link text follows the UI locale instead
-  of the project language, and the preview's `stripUrl` throws in `blob:` mode. Neither
-  matters here: published HTML is not written, and the preview uses its service worker on
-  the editor origin.
+  of the project language (visible only when *Also save the exported website* is ticked),
+  and the preview's `stripUrl` throws in `blob:` mode (not an issue here: the preview uses its
+  service worker on the editor origin).
 
 ## C. Round-trip measurements
 

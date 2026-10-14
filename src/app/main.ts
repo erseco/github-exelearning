@@ -134,6 +134,14 @@ function showRepoLink() {
         href: `https://github.com/${owner}/${repo}/tree/${encodeURIComponent(project.branch)}/${path}`,
         textContent: `${owner}/${repo} · ${project.branch}${path ? ` · ${path}` : ''}`,
     });
+    // A folder that commits its exported website is served from its path; the Pages workflow publishes at the root.
+    const site = $<HTMLAnchorElement>('site-link');
+    site.hidden = !project.pages;
+    site.href = pagesUrl(project.target) + (path && project.shas.has('index.html') ? `${path}/` : '');
+}
+
+function pagesUrl({ owner, repo }: { owner: string; repo: string }) {
+    return repo.toLowerCase() === `${owner.toLowerCase()}.github.io` ? `https://${repo}/` : `https://${owner.toLowerCase()}.github.io/${repo}/`;
 }
 
 /** Collect commit options; resolves in the click handler so a GitHub popup can still be opened. */
@@ -422,7 +430,7 @@ async function showPagesDialog() {
         value: workflow,
     })}`;
     $<HTMLAnchorElement>('pages-settings').href = `https://github.com/${owner}/${repo}/settings/pages`;
-    const site = repo.toLowerCase() === `${owner.toLowerCase()}.github.io` ? `https://${repo}/` : `https://${owner.toLowerCase()}.github.io/${repo}/`;
+    const site = pagesUrl(project.target);
     $('pages-result').replaceChildren(t('pagesResult', { url: '' }), element('a', { href: site, target: '_blank', rel: 'noopener', textContent: site }));
     $<HTMLDialogElement>('pages-dialog').showModal();
 }
@@ -454,7 +462,7 @@ async function main() {
         other: 'openOther', logout: 'logout', 'message-label': 'commitMessage', 'files-label': 'filesToSave',
         'pr-label': 'asPullRequest', 'cancel-save': 'cancel', 'confirm-save': 'save', 'signin-label': 'signIn', 'see-all': 'seeAll', 'see-all-hint': 'seeAllHint', 'or-open': 'orOpen', 'open-hint': 'publicHint', experimental: 'experimental', 'source-label': 'source', 'repos-title': 'yourRepos',
         'more-access': 'moreAccess', 'view-grid-label': 'gridView', 'view-list-label': 'listView', 'logout-landing': 'logout', pages: 'publishPages', 'pages-title': 'pagesTitle',
-        'pages-intro': 'pagesIntro', 'pages-workflow': 'pagesWorkflow', 'pages-settings': 'pagesSettings', 'pages-close': 'close',
+        'pages-intro': 'pagesIntro', 'pages-workflow': 'pagesWorkflow', 'pages-settings': 'pagesSettings', 'pages-close': 'close', 'site-link-label': 'viewSite',
         'site-help-title': 'siteHelpTitle', 'site-help-commit-title': 'siteHelpCommitTitle', 'site-help-commit': 'siteHelpCommit',
         'site-help-action-title': 'siteHelpActionTitle', 'site-help-action': 'siteHelpAction', 'site-help-tip': 'siteHelpTip', 'site-help-close': 'close',
     };

@@ -46,7 +46,7 @@ async function github(route) {
     }
     const body = request.postData() ? JSON.parse(request.postData()) : undefined;
     if (request.method() !== 'GET') writes.push({ method: request.method(), path, body, auth: request.headers().authorization });
-    if (path === '/repos/teacher/libro') return json({ id: 42, private: false, default_branch: 'main', owner: { id: 7 } });
+    if (path === '/repos/teacher/libro') return json({ id: 42, private: false, has_pages: true, default_branch: 'main', owner: { id: 7 } });
     if (path === '/repos/teacher/libro/branches/main') return json({ protected: false, commit: { sha: 'c1', commit: { tree: { sha: 't1' } } } });
     if (path === '/repos/teacher/libro/git/trees/t1') {
         return json({ truncated: false, tree: [...files.keys()].map((p) => ({ path: p, type: 'blob', mode: '100644', sha: sha(p) })) });
@@ -231,6 +231,9 @@ try {
     await page.screenshot({ path: `${shots}5-pages.png` });
     await page.locator('#pages-close').click();
     step('"Publish on GitHub Pages" links to a prefilled workflow and the Pages settings');
+    assert.equal(await page.locator('#site-link').getAttribute('href'), 'https://teacher.github.io/libro/');
+    assert.ok(await page.locator('#site-link').isVisible());
+    step('"View website" links to the published site when Pages is enabled');
 
     // Landing page while signed in: the repositories the app can reach, resources first.
     await page.goto(APP);

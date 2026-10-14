@@ -64,6 +64,8 @@ export interface Project {
     repoId: number;
     ownerId: number;
     private: boolean;
+    /** GitHub Pages is enabled for the repository. */
+    pages: boolean;
     /** Branch saves go to; becomes the pull request branch after saving as a pull request. */
     branch: string;
     /** Branch the project was opened from: pull request base and publishing branch. */
@@ -164,6 +166,7 @@ export async function loadProject(api: Api, target: Target, authenticated: boole
         repoId: info.id,
         ownerId: info.owner.id,
         private: info.private,
+        pages: !!info.has_pages,
         branch,
         baseBranch: branch,
         protectedBranch: !!head.protected,

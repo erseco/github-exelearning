@@ -455,8 +455,11 @@ async function main() {
         'pr-label': 'asPullRequest', 'cancel-save': 'cancel', 'confirm-save': 'save', 'signin-label': 'signIn', 'see-all': 'seeAll', 'see-all-hint': 'seeAllHint', 'or-open': 'orOpen', 'open-hint': 'publicHint', experimental: 'experimental', 'source-label': 'source', 'repos-title': 'yourRepos',
         'more-access': 'moreAccess', 'view-grid-label': 'gridView', 'view-list-label': 'listView', 'logout-landing': 'logout', pages: 'publishPages', 'pages-title': 'pagesTitle',
         'pages-intro': 'pagesIntro', 'pages-workflow': 'pagesWorkflow', 'pages-settings': 'pagesSettings', 'pages-close': 'close',
+        'site-help-title': 'siteHelpTitle', 'site-help-commit-title': 'siteHelpCommitTitle', 'site-help-commit': 'siteHelpCommit',
+        'site-help-action-title': 'siteHelpActionTitle', 'site-help-action': 'siteHelpAction', 'site-help-tip': 'siteHelpTip', 'site-help-close': 'close',
     };
     for (const [id, key] of Object.entries(texts)) $(id).textContent = t(key);
+    $('site-info').setAttribute('aria-label', t('siteHelpTitle'));
 
     $('save').onclick = () => void save();
     $('download').onclick = () => void download().catch((e) => toast(errorText(e)));

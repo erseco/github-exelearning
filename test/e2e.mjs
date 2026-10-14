@@ -153,6 +153,13 @@ try {
     assert.deepEqual(listed, ['content.xml']);
     await page.locator('#write-site').check();
     listed = await page.locator('#save-files li').allInnerTexts();
+    await page.locator('#site-info').click();
+    await page.locator('#site-help:popover-open').waitFor();
+    assert.match(await page.locator('#site-help').innerText(), /Pages workflow/);
+    await page.screenshot({ path: `${shots}2b-site-help.png` });
+    await page.locator('#site-help-close').click();
+    await page.locator('#site-help:popover-open').waitFor({ state: 'detached' });
+    assert.ok(await page.locator('#write-site').isChecked(), 'the info button does not toggle the option');
     await page.screenshot({ path: `${shots}2-save-dialog.png` });
     step('Ctrl/Cmd+S opens "Save to GitHub" with content.xml and, checked by default, the changed website files');
 

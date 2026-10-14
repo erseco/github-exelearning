@@ -83,7 +83,17 @@
     <label><span id="message-label"></span><input id="commit-message" required></label>
     <p id="files-label"></p>
     <ul id="save-files"></ul>
-    <label class="check" id="site-row"><input type="checkbox" id="write-site"><span id="site-label"></span></label>
+    <div class="check-row" id="site-row">
+      <label class="check"><input type="checkbox" id="write-site"><span id="site-label"></span></label>
+      <button type="button" class="info" id="site-info" popovertarget="site-help"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.5v.5"/></svg></button>
+    </div>
+    <div popover id="site-help" class="help">
+      <h3 id="site-help-title"></h3>
+      <p><strong id="site-help-commit-title"></strong> <span id="site-help-commit"></span></p>
+      <p><strong id="site-help-action-title"></strong> <span id="site-help-action"></span></p>
+      <p id="site-help-tip"></p>
+      <menu><button type="button" popovertarget="site-help" popovertargetaction="hide" id="site-help-close"></button></menu>
+    </div>
     <label class="check" id="delete-row"><input type="checkbox" id="delete-removed"><span id="delete-label"></span></label>
     <fieldset>
       <label class="check"><input type="radio" name="target" value="branch" id="to-branch" checked><span id="branch-label"></span></label>

@@ -25,7 +25,7 @@ concurrency:
 
 env:
   PROJECT_DIR: __PROJECT_DIR__ # folder that contains content.xml
-  EXELEARNING_IMAGE: exelearning/exelearning:v4.0.5
+  EXELEARNING_IMAGE: exelearning/exelearning:v4.0.6
 
 jobs:
   publish:

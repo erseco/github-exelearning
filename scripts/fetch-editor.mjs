@@ -6,8 +6,8 @@ import { cpSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from
 import { dirname, join } from 'node:path';
 import { unzipSync } from 'fflate';
 
-const VERSION = 'v4.0.5';
-const SHA256 = 'e9acedea9be6afd842867daa6b515f85369711b94b5d22d1523d375bcbbdf6e2';
+const VERSION = 'v4.0.6';
+const SHA256 = 'ff40a4c51848fbf6faa3217c6b32df43d968e3773b14483089c8b733d188e869';
 const RELEASE_URL = `https://github.com/exelearning/exelearning/releases/download/${VERSION}/exelearning-static-${VERSION}.zip`;
 const out = new URL('../editor/', import.meta.url).pathname;
 const source = process.argv[2];

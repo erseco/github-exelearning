@@ -64,7 +64,7 @@ use *⋯ → Download .elpx*.
 ```
 github.exelearning.dev            app: open/save, GitHub login, holds the token
   └─ iframe github-editor.exelearning.dev/editor/embed.html
-       official eXeLearning static editor (v4.0.5) + small adapter,
+       official eXeLearning static editor (v4.0.6) + small adapter,
        driven only through its postMessage embedding protocol
 Cloudflare Worker                 static files + /api/github/token (client secret)
 GitHub REST API (CORS)            read the tree/files, write blobs → tree → commit → ref / pull request
@@ -96,7 +96,7 @@ Requires Node 20+ and [wrangler](https://developers.cloudflare.com/workers/wrang
 
 ```sh
 npm install
-npm run fetch-editor   # official static editor v4.0.5 → editor/ (SHA-256 checked)
+npm run fetch-editor   # official static editor v4.0.6 → editor/ (SHA-256 checked)
 npm run fixture        # disposable clone of exelearning-style-book → test/fixture/ (tests only)
 npm run dev            # http://localhost:8787 (app) + http://127.0.0.1:8787 (editor)
 ```
